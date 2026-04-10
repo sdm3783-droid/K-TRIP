@@ -585,6 +585,167 @@
     .key-dot.unset { background: #ef4444; }
 
     /* ===========================
+       필터 바
+       =========================== */
+    .filter-bar {
+      display: flex;
+      align-items: flex-end;
+      gap: 12px;
+      flex-wrap: wrap;
+      padding: 16px 20px;
+      background: #f0f7ff;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      border: 1px solid #d1e3f5;
+    }
+
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .filter-group label {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #1a3a5c;
+    }
+
+    .filter-group select,
+    .filter-group input[type="date"],
+    .filter-group input[type="month"] {
+      padding: 7px 10px;
+      border: 1.5px solid #a0c4e4;
+      border-radius: 6px;
+      font-size: 0.88rem;
+      font-family: inherit;
+      background: white;
+      color: #2d3748;
+      outline: none;
+      transition: border-color 0.15s;
+      min-width: 130px;
+    }
+
+    .filter-group select:focus,
+    .filter-group input:focus {
+      border-color: #2b5c8a;
+      box-shadow: 0 0 0 2px rgba(43,92,138,0.12);
+    }
+
+    .filter-mode-group {
+      display: flex;
+      gap: 0;
+      border-radius: 6px;
+      overflow: hidden;
+      border: 1.5px solid #a0c4e4;
+    }
+
+    .filter-mode-btn {
+      padding: 7px 14px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      background: white;
+      color: #64748b;
+      font-family: inherit;
+      transition: all 0.15s;
+    }
+
+    .filter-mode-btn.active {
+      background: #2b5c8a;
+      color: white;
+    }
+
+    .filter-mode-btn:not(:last-child) {
+      border-right: 1.5px solid #a0c4e4;
+    }
+
+    .filter-actions {
+      display: flex;
+      gap: 6px;
+      margin-left: auto;
+      align-self: flex-end;
+    }
+
+    /* ===========================
+       통계 패널
+       =========================== */
+    .stats-panel {
+      display: none;
+      background: #f0f7ff;
+      border: 1px solid #d1e3f5;
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .stats-panel.visible { display: block; }
+
+    .stats-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #1a3a5c;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .stats-summary {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+
+    .stats-card {
+      background: white;
+      border-radius: 8px;
+      padding: 12px 20px;
+      border: 1px solid #d1e3f5;
+      text-align: center;
+      min-width: 100px;
+    }
+
+    .stats-card .s-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #2b5c8a;
+    }
+
+    .stats-card .s-label {
+      font-size: 0.75rem;
+      color: #64748b;
+      margin-top: 2px;
+    }
+
+    .stats-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.86rem;
+    }
+
+    .stats-table th {
+      background: #2b5c8a;
+      color: white;
+      padding: 8px 10px;
+      text-align: center;
+      font-weight: 600;
+    }
+
+    .stats-table th:first-child { border-radius: 6px 0 0 0; }
+    .stats-table th:last-child  { border-radius: 0 6px 0 0; }
+
+    .stats-table td {
+      padding: 8px 10px;
+      text-align: center;
+      border-bottom: 1px solid #e2ecf5;
+    }
+
+    .stats-table tr:nth-child(even) { background: #f5f9ff; }
+
+    /* ===========================
        반응형
        =========================== */
     @media (max-width: 640px) {
@@ -667,6 +828,55 @@
         <button class="btn btn-outline" onclick="addEmptyRow()">&#10133; 행 추가</button>
         <button class="btn btn-danger"  onclick="clearAllRecords()">&#128465; 전체 삭제</button>
         <button class="btn btn-success" onclick="exportExcel()">&#128229; 엑셀로 저장</button>
+      </div>
+    </div>
+
+    <!-- 필터 바 -->
+    <div class="filter-bar">
+      <div class="filter-group">
+        <label>성명</label>
+        <select id="filterName" onchange="onFilterChange()">
+          <option value="">전체</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>검색 방식</label>
+        <div class="filter-mode-group">
+          <button class="filter-mode-btn active" id="modeAll"     onclick="setMode('all')">전체</button>
+          <button class="filter-mode-btn"        id="modeMonthly" onclick="setMode('monthly')">월별</button>
+          <button class="filter-mode-btn"        id="modeDaily"   onclick="setMode('daily')">일별</button>
+        </div>
+      </div>
+      <div class="filter-group" id="monthPickerGroup" style="display:none;">
+        <label>월 선택</label>
+        <input type="month" id="filterMonth" onchange="onFilterChange()" />
+      </div>
+      <div class="filter-group" id="datePickerGroup" style="display:none;">
+        <label>날짜 선택</label>
+        <input type="date" id="filterDate" onchange="onFilterChange()" />
+      </div>
+      <div class="filter-actions">
+        <button class="btn btn-outline" onclick="resetFilter()">&#10006; 초기화</button>
+      </div>
+    </div>
+
+    <!-- 월별 통계 패널 -->
+    <div class="stats-panel" id="statsPanel">
+      <div class="stats-title">&#128200; 월별 출근 통계</div>
+      <div class="stats-summary" id="statsSummary"></div>
+      <div class="table-wrapper">
+        <table class="stats-table">
+          <thead>
+            <tr>
+              <th>날짜</th>
+              <th>출근시간</th>
+              <th>퇴근시간</th>
+              <th>출장지</th>
+              <th>비고</th>
+            </tr>
+          </thead>
+          <tbody id="statsBody"></tbody>
+        </table>
       </div>
     </div>
 
@@ -1247,13 +1457,115 @@ async function analyzeFiles() {
 }
 
 /* ============================================================
+   필터 상태
+   ============================================================ */
+let filterMode = 'all'; // 'all' | 'monthly' | 'daily'
+
+function setMode(mode) {
+  filterMode = mode;
+  ['All','Monthly','Daily'].forEach(m => {
+    document.getElementById('mode' + m).classList.toggle('active', mode === m.toLowerCase());
+  });
+  document.getElementById('monthPickerGroup').style.display = mode === 'monthly' ? '' : 'none';
+  document.getElementById('datePickerGroup').style.display  = mode === 'daily'   ? '' : 'none';
+  onFilterChange();
+}
+
+function onFilterChange() {
+  renderTable();
+  renderStats();
+}
+
+function resetFilter() {
+  document.getElementById('filterName').value  = '';
+  document.getElementById('filterMonth').value = '';
+  document.getElementById('filterDate').value  = '';
+  setMode('all');
+}
+
+function getFilteredRecords() {
+  const name  = document.getElementById('filterName').value;
+  const month = document.getElementById('filterMonth').value;
+  const date  = document.getElementById('filterDate').value;
+
+  return records.filter(r => {
+    if (name  && r.성명 !== name)               return false;
+    if (filterMode === 'monthly' && month && !(r.날짜 || '').startsWith(month)) return false;
+    if (filterMode === 'daily'   && date  && r.날짜 !== date)                   return false;
+    return true;
+  });
+}
+
+function updateNameDropdown() {
+  const sel   = document.getElementById('filterName');
+  const cur   = sel.value;
+  const names = [...new Set(records.map(r => r.성명).filter(Boolean))].sort();
+  sel.innerHTML = '<option value="">전체</option>' +
+    names.map(n => `<option value="${esc(n)}" ${cur === n ? 'selected' : ''}>${esc(n)}</option>`).join('');
+}
+
+/* ============================================================
+   월별 통계 패널 렌더링
+   ============================================================ */
+function renderStats() {
+  const panel = document.getElementById('statsPanel');
+  const name  = document.getElementById('filterName').value;
+  const month = document.getElementById('filterMonth').value;
+
+  if (!name || filterMode !== 'monthly' || !month) {
+    panel.classList.remove('visible');
+    return;
+  }
+
+  const filtered = getFilteredRecords().sort((a, b) => (a.날짜 || '').localeCompare(b.날짜 || ''));
+  panel.classList.add('visible');
+
+  // 통계 계산
+  const totalDays = filtered.length;
+  let totalMinutes = 0;
+  let validCount   = 0;
+
+  filtered.forEach(r => {
+    if (r.출근시간 && r.퇴근시간) {
+      const [sh, sm] = r.출근시간.split(':').map(Number);
+      const [eh, em] = r.퇴근시간.split(':').map(Number);
+      const diff = (eh * 60 + em) - (sh * 60 + sm);
+      if (diff > 0) { totalMinutes += diff; validCount++; }
+    }
+  });
+
+  const avgMin = validCount > 0 ? Math.round(totalMinutes / validCount) : 0;
+  const avgH   = Math.floor(avgMin / 60);
+  const avgM   = avgMin % 60;
+
+  document.getElementById('statsSummary').innerHTML = `
+    <div class="stats-card"><div class="s-value">${name}</div><div class="s-label">성명</div></div>
+    <div class="stats-card"><div class="s-value">${month}</div><div class="s-label">조회 월</div></div>
+    <div class="stats-card"><div class="s-value">${totalDays}일</div><div class="s-label">총 출근일수</div></div>
+    <div class="stats-card"><div class="s-value">${validCount > 0 ? avgH + 'h ' + String(avgM).padStart(2,'0') + 'm' : '-'}</div><div class="s-label">평균 근무시간</div></div>
+  `;
+
+  document.getElementById('statsBody').innerHTML = filtered.map(r => `
+    <tr>
+      <td>${esc(r.날짜)}</td>
+      <td>${esc(r.출근시간) || '-'}</td>
+      <td>${esc(r.퇴근시간) || '-'}</td>
+      <td>${esc(r.출장지)   || '-'}</td>
+      <td>${esc(r.비고)     || ''}</td>
+    </tr>
+  `).join('');
+}
+
+/* ============================================================
    테이블 렌더링
    ============================================================ */
 function renderTable() {
-  const tbody = document.getElementById('tableBody');
-  document.getElementById('recordCount').textContent = `${records.length}건`;
+  updateNameDropdown();
+  const filtered = getFilteredRecords();
+  const tbody    = document.getElementById('tableBody');
+  document.getElementById('recordCount').textContent = `${filtered.length}건`;
 
-  if (records.length === 0) {
+  if (filtered.length === 0) {
     tbody.innerHTML = `
       <tr id="emptyRow">
         <td colspan="9">
@@ -1266,7 +1578,9 @@ function renderTable() {
     return;
   }
 
-  tbody.innerHTML = records.map((r, i) => `
+  tbody.innerHTML = filtered.map((r) => {
+    const i = records.indexOf(r);
+    return `
     <tr>
       <td>${i + 1}</td>
       <td><input type="text"  value="${esc(r.성명)}"    onchange="updateRecord(${i}, '성명', this.value)"    placeholder="성명" /></td>
@@ -1277,8 +1591,8 @@ function renderTable() {
       <td><input type="text"  value="${esc(r.출장지)}"  onchange="updateRecord(${i}, '출장지', this.value)"  placeholder="출장지/방문처" /></td>
       <td><input type="text"  value="${esc(r.비고)}"    onchange="updateRecord(${i}, '비고', this.value)"    placeholder="특이사항" /></td>
       <td><button class="delete-row-btn" onclick="deleteRow(${i})" title="행 삭제">&#10005;</button></td>
-    </tr>
-  `).join('');
+    </tr>`;
+  }).join('');
 }
 
 function esc(v) {
