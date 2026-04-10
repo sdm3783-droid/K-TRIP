@@ -1920,7 +1920,8 @@ function renderStats() {
   filtered.forEach(r => {
     if (r.출근시간 && r.퇴근시간) {
       const s = timeToMinutes(r.출근시간);
-      const e = timeToMinutes(r.퇴근시간);
+      let e = timeToMinutes(r.퇴근시간);
+      if (e <= s) e += 24 * 60; // 자정 넘긴 야간 근무
       if (e > s) { totalMinutes += (e - s); validCount++; }
     }
   });
@@ -2132,8 +2133,9 @@ document.getElementById('detailModal').addEventListener('click', (e) => {
 function calcWorkTime(start, end) {
   if (!start || !end) return '-';
   const s = timeToMinutes(start);
-  const e = timeToMinutes(end);
-  if (s === null || e === null || e <= s) return '-';
+  let e = timeToMinutes(end);
+  if (s === null || e === null) return '-';
+  if (e <= s) e += 24 * 60; // 자정 넘긴 야간 근무
   const diff = e - s;
   const h = Math.floor(diff / 60);
   const m = diff % 60;
