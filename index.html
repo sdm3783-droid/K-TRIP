@@ -7,6 +7,8 @@
 
   <!-- PDF.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <!-- SheetJS (엑셀 내보내기) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <!-- Firebase Compat SDK -->
@@ -745,6 +747,14 @@
 
     .stats-table tr:nth-child(even) { background: #f5f9ff; }
 
+    .chart-wrap {
+      background: white;
+      border-radius: 10px;
+      padding: 16px;
+      border: 1px solid #d1e3f5;
+      margin-bottom: 4px;
+    }
+
     /* ===========================
        반응형
        =========================== */
@@ -864,7 +874,12 @@
     <div class="stats-panel" id="statsPanel">
       <div class="stats-title">&#128200; 월별 출근 통계</div>
       <div class="stats-summary" id="statsSummary"></div>
-      <div class="table-wrapper">
+      <!-- 막대 그래프 -->
+      <div class="chart-wrap">
+        <canvas id="attendanceChart"></canvas>
+      </div>
+      <!-- 상세 테이블 -->
+      <div class="table-wrapper" style="margin-top:20px;">
         <table class="stats-table">
           <thead>
             <tr>
@@ -1507,6 +1522,20 @@ function updateNameDropdown() {
 /* ============================================================
    월별 통계 패널 렌더링
    ============================================================ */
+let attendanceChartInstance = null;
+
+function timeToMinutes(t) {
+  if (!t) return null;
+  const [h, m] = t.split(':').map(Number);
+  return h * 60 + m;
+}
+
+function minutesToLabel(min) {
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+}
+
 function renderStats() {
   const panel = document.getElementById('statsPanel');
   const name  = document.getElementById('filterName').value;
@@ -1521,30 +1550,102 @@ function renderStats() {
   panel.classList.add('visible');
 
   // 통계 계산
-  const totalDays = filtered.length;
+  const totalDays  = filtered.length;
   let totalMinutes = 0;
   let validCount   = 0;
 
   filtered.forEach(r => {
     if (r.출근시간 && r.퇴근시간) {
-      const [sh, sm] = r.출근시간.split(':').map(Number);
-      const [eh, em] = r.퇴근시간.split(':').map(Number);
-      const diff = (eh * 60 + em) - (sh * 60 + sm);
-      if (diff > 0) { totalMinutes += diff; validCount++; }
+      const s = timeToMinutes(r.출근시간);
+      const e = timeToMinutes(r.퇴근시간);
+      if (e > s) { totalMinutes += (e - s); validCount++; }
     }
   });
 
   const avgMin = validCount > 0 ? Math.round(totalMinutes / validCount) : 0;
   const avgH   = Math.floor(avgMin / 60);
   const avgM   = avgMin % 60;
+  const totalH = Math.floor(totalMinutes / 60);
+  const totalM = totalMinutes % 60;
 
   document.getElementById('statsSummary').innerHTML = `
-    <div class="stats-card"><div class="s-value">${name}</div><div class="s-label">성명</div></div>
+    <div class="stats-card"><div class="s-value">${esc(name)}</div><div class="s-label">성명</div></div>
     <div class="stats-card"><div class="s-value">${month}</div><div class="s-label">조회 월</div></div>
     <div class="stats-card"><div class="s-value">${totalDays}일</div><div class="s-label">총 출근일수</div></div>
     <div class="stats-card"><div class="s-value">${validCount > 0 ? avgH + 'h ' + String(avgM).padStart(2,'0') + 'm' : '-'}</div><div class="s-label">평균 근무시간</div></div>
+    <div class="stats-card"><div class="s-value">${validCount > 0 ? totalH + 'h ' + String(totalM).padStart(2,'0') + 'm' : '-'}</div><div class="s-label">총 근무시간</div></div>
   `;
 
+  // 차트 데이터
+  const labels    = filtered.map(r => r.날짜 ? r.날짜.slice(5) : '');
+  const startData = filtered.map(r => timeToMinutes(r.출근시간));
+  const endData   = filtered.map(r => timeToMinutes(r.퇴근시간));
+
+  // 범위 바 데이터 (출근~퇴근)
+  const barData = filtered.map(r => {
+    const s = timeToMinutes(r.출근시간);
+    const e = timeToMinutes(r.퇴근시간);
+    return (s !== null && e !== null && e > s) ? [s, e] : [null, null];
+  });
+
+  // Y축 범위 자동 계산
+  const allMins = [...startData, ...endData].filter(v => v !== null);
+  const yMin = allMins.length ? Math.max(0, Math.min(...allMins) - 30) : 480;
+  const yMax = allMins.length ? Math.min(1440, Math.max(...allMins) + 30) : 1140;
+
+  if (attendanceChartInstance) {
+    attendanceChartInstance.destroy();
+    attendanceChartInstance = null;
+  }
+
+  const ctx = document.getElementById('attendanceChart').getContext('2d');
+  attendanceChartInstance = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: '근무시간',
+          data: barData,
+          backgroundColor: 'rgba(43, 92, 138, 0.7)',
+          borderColor: '#1a3a5c',
+          borderWidth: 1,
+          borderRadius: 4
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => {
+              const v = ctx.raw;
+              if (!v || v[0] === null) return '데이터 없음';
+              return `출근 ${minutesToLabel(v[0])} → 퇴근 ${minutesToLabel(v[1])}  (${minutesToLabel(v[1]-v[0])} 근무)`;
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          min: yMin,
+          max: yMax,
+          ticks: {
+            stepSize: 60,
+            callback: (val) => minutesToLabel(val)
+          },
+          title: { display: true, text: '시간' }
+        },
+        x: {
+          title: { display: true, text: '날짜 (MM-DD)' }
+        }
+      }
+    }
+  });
+
+  // 상세 테이블
   document.getElementById('statsBody').innerHTML = filtered.map(r => `
     <tr>
       <td>${esc(r.날짜)}</td>
