@@ -886,6 +886,103 @@
     }
 
     /* ===========================
+       비밀번호 잠금 화면
+       =========================== */
+    .lock-screen {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(135deg, #1a3a5c 0%, #2b5c8a 100%);
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .lock-screen.active { display: flex; }
+
+    .lock-box {
+      background: white;
+      border-radius: 16px;
+      padding: 40px 36px;
+      width: 100%;
+      max-width: 380px;
+      text-align: center;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+    }
+
+    .lock-icon {
+      font-size: 3rem;
+      margin-bottom: 12px;
+    }
+
+    .lock-box h2 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #1a3a5c;
+      margin-bottom: 6px;
+    }
+
+    .lock-box p {
+      font-size: 0.85rem;
+      color: #64748b;
+      margin-bottom: 24px;
+    }
+
+    .lock-input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1.5px solid #d1e3f5;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-family: inherit;
+      text-align: center;
+      letter-spacing: 4px;
+      outline: none;
+      margin-bottom: 12px;
+      transition: border-color 0.15s;
+    }
+
+    .lock-input:focus {
+      border-color: #2b5c8a;
+      box-shadow: 0 0 0 2px rgba(43,92,138,0.15);
+    }
+
+    .lock-input.error {
+      border-color: #e74c3c;
+      animation: shake 0.3s ease;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-8px); }
+      75% { transform: translateX(8px); }
+    }
+
+    .lock-error {
+      font-size: 0.82rem;
+      color: #e74c3c;
+      font-weight: 600;
+      min-height: 18px;
+      margin-bottom: 12px;
+    }
+
+    .lock-btn {
+      width: 100%;
+      padding: 12px;
+      background: #2b5c8a;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.2s;
+    }
+
+    .lock-btn:hover { background: #1a3a5c; }
+
+    /* ===========================
        반응형
        =========================== */
     @media (max-width: 640px) {
@@ -909,6 +1006,18 @@
   </style>
 </head>
 <body>
+
+<!-- 비밀번호 잠금 화면 -->
+<div class="lock-screen active" id="lockScreen">
+  <div class="lock-box">
+    <div class="lock-icon">🔐</div>
+    <h2>출장 출퇴근 기록 관리</h2>
+    <p>접근하려면 비밀번호를 입력하세요</p>
+    <input type="password" class="lock-input" id="lockInput" placeholder="비밀번호" maxlength="20" />
+    <div class="lock-error" id="lockError"></div>
+    <button class="lock-btn" onclick="checkPassword()">확인</button>
+  </div>
+</div>
 
 <!-- ===================================================
      헤더
@@ -1166,6 +1275,45 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const COLLECTION = 'tripRecords';
+
+/* ============================================================
+   비밀번호 잠금
+   ============================================================ */
+const LOCK_PW = 'admin3783';
+
+(function checkLock() {
+  if (sessionStorage.getItem('k-trip-auth') === 'ok') {
+    document.getElementById('lockScreen').classList.remove('active');
+  }
+})();
+
+function checkPassword() {
+  const val = document.getElementById('lockInput').value;
+  const input = document.getElementById('lockInput');
+  const errEl = document.getElementById('lockError');
+
+  if (val === LOCK_PW) {
+    sessionStorage.setItem('k-trip-auth', 'ok');
+    document.getElementById('lockScreen').classList.remove('active');
+    errEl.textContent = '';
+  } else {
+    input.classList.add('error');
+    errEl.textContent = '비밀번호가 올바르지 않습니다.';
+    input.value = '';
+    setTimeout(() => input.classList.remove('error'), 400);
+    input.focus();
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const input = document.getElementById('lockInput');
+  if (input) {
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') checkPassword();
+    });
+    setTimeout(() => input.focus(), 100);
+  }
+});
 
 /* ============================================================
    PDF.js worker 설정
