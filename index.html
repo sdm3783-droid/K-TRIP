@@ -1048,6 +1048,7 @@
             <th style="width:110px;">날짜</th>
             <th style="width:90px;">출근시간</th>
             <th style="width:90px;">퇴근시간</th>
+            <th style="width:80px;">근무시간</th>
             <th style="width:80px;">서명확인</th>
             <th style="width:50px;">삭제</th>
           </tr>
@@ -1903,6 +1904,7 @@ function renderTable() {
       <td>${esc(r.날짜)    || '-'}</td>
       <td>${esc(r.출근시간) || '-'}</td>
       <td>${esc(r.퇴근시간) || '-'}</td>
+      <td>${calcWorkTime(r.출근시간, r.퇴근시간)}</td>
       <td>
         <span class="sig-badge ${r.서명확인 ? 'sig-ok' : 'sig-no'}">
           ${r.서명확인 ? '✅ 확인' : '❌ 미확인'}
@@ -1978,6 +1980,17 @@ async function deleteFromDetail() {
 document.getElementById('detailModal').addEventListener('click', (e) => {
   if (e.target === document.getElementById('detailModal')) closeDetailModal();
 });
+
+function calcWorkTime(start, end) {
+  if (!start || !end) return '-';
+  const s = timeToMinutes(start);
+  const e = timeToMinutes(end);
+  if (s === null || e === null || e <= s) return '-';
+  const diff = e - s;
+  const h = Math.floor(diff / 60);
+  const m = diff % 60;
+  return h > 0 ? `${h}h ${String(m).padStart(2,'0')}m` : `${m}m`;
+}
 
 function esc(v) {
   if (v == null) return '';
