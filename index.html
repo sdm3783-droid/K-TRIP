@@ -747,6 +747,22 @@
 
     .stats-table tr:nth-child(even) { background: #f5f9ff; }
 
+    .sig-badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+      user-select: none;
+      transition: opacity 0.15s;
+      white-space: nowrap;
+    }
+
+    .sig-badge:hover { opacity: 0.75; }
+    .sig-ok  { background: #d1fae5; color: #065f46; }
+    .sig-no  { background: #fee2e2; color: #991b1b; }
+
     .chart-wrap {
       background: white;
       border-radius: 10px;
@@ -907,6 +923,7 @@
             <th style="width:90px;">퇴근시간</th>
             <th style="width:180px;">출장지 / 방문처</th>
             <th>비고</th>
+            <th style="width:70px;">서명확인</th>
             <th style="width:50px;">삭제</th>
           </tr>
         </thead>
@@ -1090,6 +1107,7 @@ async function saveRecordToFirestore(record) {
       퇴근시간: record.퇴근시간 || '',
       출장지:   record.출장지   || '',
       비고:     record.비고     || '',
+      서명확인: record.서명확인 === true,
       _createdAt: record._createdAt || firebase.firestore.FieldValue.serverTimestamp()
     };
 
@@ -1328,7 +1346,8 @@ async function callClaude(imageList) {
     "출근시간": "09:00",
     "퇴근시간": "18:00",
     "출장지": "서울 강남구 삼성동",
-    "비고": ""
+    "비고": "",
+    "서명확인": true
   }
 ]
 
@@ -1337,6 +1356,7 @@ async function callClaude(imageList) {
 - 시간은 반드시 HH:MM 형식 (24시간제)
 - 데이터가 없는 필드는 빈 문자열("")로 설정
 - 여러 행이 있으면 모두 배열에 포함
+- 서명확인: 해당 행에 실제 수기 서명(사인)이 존재하면 true, 서명란이 비어있거나 없으면 false
 - JSON 외 다른 텍스트 절대 포함 금지`;
 
   const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -1445,6 +1465,7 @@ async function analyzeFiles() {
           퇴근시간: r.퇴근시간 || '',
           출장지:   r.출장지   || '',
           비고:     r.비고     || '',
+          서명확인: r.서명확인 === true,
           _createdAt: firebase.firestore.FieldValue.serverTimestamp()
         };
         records.push(newRecord);
@@ -1691,6 +1712,11 @@ function renderTable() {
       <td><input type="time"  value="${esc(r.퇴근시간)}" onchange="updateRecord(${i}, '퇴근시간', this.value)" /></td>
       <td><input type="text"  value="${esc(r.출장지)}"  onchange="updateRecord(${i}, '출장지', this.value)"  placeholder="출장지/방문처" /></td>
       <td><input type="text"  value="${esc(r.비고)}"    onchange="updateRecord(${i}, '비고', this.value)"    placeholder="특이사항" /></td>
+      <td>
+        <span class="sig-badge ${r.서명확인 ? 'sig-ok' : 'sig-no'}" onclick="toggleSig(${i})" title="클릭하여 변경">
+          ${r.서명확인 ? '✅ 확인' : '❌ 미확인'}
+        </span>
+      </td>
       <td><button class="delete-row-btn" onclick="deleteRow(${i})" title="행 삭제">&#10005;</button></td>
     </tr>`;
   }).join('');
@@ -1713,6 +1739,12 @@ async function updateRecord(idx, key, value) {
   await saveRecordToFirestore(records[idx]);
 }
 
+async function toggleSig(idx) {
+  records[idx].서명확인 = !records[idx].서명확인;
+  await saveRecordToFirestore(records[idx]);
+  renderTable();
+}
+
 async function deleteRow(idx) {
   const record = records[idx];
   await deleteRecordFromFirestore(record.id);
@@ -1723,7 +1755,7 @@ async function deleteRow(idx) {
 
 async function addEmptyRow() {
   const newRecord = {
-    성명: '', 소속부서: '', 날짜: '', 출근시간: '', 퇴근시간: '', 출장지: '', 비고: '',
+    성명: '', 소속부서: '', 날짜: '', 출근시간: '', 퇴근시간: '', 출장지: '', 비고: '', 서명확인: false,
     _createdAt: firebase.firestore.FieldValue.serverTimestamp()
   };
   records.push(newRecord);
