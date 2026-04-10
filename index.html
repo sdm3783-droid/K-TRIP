@@ -1146,13 +1146,27 @@ async function callClaude(imageList) {
   const text = data.content?.[0]?.text || '';
 
   const cleaned = text.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+  console.log('[Claude 응답 전체]', cleaned);
+
+  // 1차: 전체 파싱 시도
+  try { return JSON.parse(cleaned); } catch {}
+
+  // 2차: 배열 전체 추출 시도
   try {
-    return JSON.parse(cleaned);
-  } catch {
     const match = cleaned.match(/\[[\s\S]*\]/);
     if (match) return JSON.parse(match[0]);
-    throw new Error('JSON 파싱 실패: ' + cleaned.substring(0, 200));
+  } catch {}
+
+  // 3차: 잘린 응답에서 완성된 객체만 추출
+  const objects = [];
+  const objRegex = /\{[^{}]*\}/g;
+  let m;
+  while ((m = objRegex.exec(cleaned)) !== null) {
+    try { objects.push(JSON.parse(m[0])); } catch {}
   }
+  if (objects.length > 0) return objects;
+
+  throw new Error('JSON 파싱 실패: ' + cleaned.substring(0, 200));
 }
 
 /* ============================================================
