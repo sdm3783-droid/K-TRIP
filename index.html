@@ -763,6 +763,120 @@
     .sig-ok  { background: #d1fae5; color: #065f46; }
     .sig-no  { background: #fee2e2; color: #991b1b; }
 
+    /* ===========================
+       행 클릭 힌트
+       =========================== */
+    tbody tr.clickable { cursor: pointer; }
+    tbody tr.clickable:hover { background: #dbeeff !important; }
+
+    /* ===========================
+       상세 모달
+       =========================== */
+    .detail-modal {
+      background: white;
+      border-radius: 14px;
+      padding: 32px;
+      width: 100%;
+      max-width: 560px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .detail-modal-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #1a3a5c;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+
+    .detail-field {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .detail-field.full { grid-column: 1 / -1; }
+
+    .detail-field label {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #64748b;
+    }
+
+    .detail-field input[type="text"],
+    .detail-field input[type="date"],
+    .detail-field input[type="time"] {
+      width: 100%;
+      padding: 9px 12px;
+      border: 1.5px solid #d1e3f5;
+      border-radius: 8px;
+      font-size: 0.92rem;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .detail-field input:focus {
+      border-color: #2b5c8a;
+      box-shadow: 0 0 0 2px rgba(43,92,138,0.12);
+    }
+
+    .detail-sig-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+      padding: 12px 16px;
+      background: #f7faff;
+      border-radius: 8px;
+      border: 1px solid #d1e3f5;
+    }
+
+    .detail-sig-row label {
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: #2d3748;
+      flex: 1;
+    }
+
+    .sig-toggle {
+      display: flex;
+      gap: 8px;
+    }
+
+    .sig-toggle button {
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: 1.5px solid transparent;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.15s;
+    }
+
+    .sig-toggle .btn-sig-ok  { background: #f0fdf4; border-color: #86efac; color: #166534; }
+    .sig-toggle .btn-sig-no  { background: #fff1f2; border-color: #fca5a5; color: #991b1b; }
+    .sig-toggle .btn-sig-ok.active  { background: #22c55e; color: white; border-color: #22c55e; }
+    .sig-toggle .btn-sig-no.active  { background: #ef4444; color: white; border-color: #ef4444; }
+
+    .detail-modal-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: space-between;
+    }
+
     .chart-wrap {
       background: white;
       border-radius: 10px;
@@ -866,6 +980,18 @@
         </select>
       </div>
       <div class="filter-group">
+        <label>소속부서</label>
+        <select id="filterDept" onchange="onFilterChange()">
+          <option value="">전체</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>출장지</label>
+        <select id="filterDest" onchange="onFilterChange()">
+          <option value="">전체</option>
+        </select>
+      </div>
+      <div class="filter-group">
         <label>검색 방식</label>
         <div class="filter-mode-group">
           <button class="filter-mode-btn active" id="modeAll"     onclick="setMode('all')">전체</button>
@@ -911,25 +1037,24 @@
       </div>
     </div>
 
+    <p style="font-size:0.78rem;color:#94a3b8;margin-bottom:8px;">&#128073; 행을 클릭하면 상세 정보를 확인하고 편집할 수 있습니다.</p>
     <div class="table-wrapper">
       <table id="recordTable">
         <thead>
           <tr>
             <th style="width:40px;">#</th>
-            <th style="width:90px;">성명</th>
-            <th style="width:110px;">소속부서</th>
+            <th style="width:100px;">성명</th>
+            <th style="width:120px;">소속부서</th>
             <th style="width:110px;">날짜</th>
             <th style="width:90px;">출근시간</th>
             <th style="width:90px;">퇴근시간</th>
-            <th style="width:180px;">출장지 / 방문처</th>
-            <th>비고</th>
-            <th style="width:70px;">서명확인</th>
+            <th style="width:80px;">서명확인</th>
             <th style="width:50px;">삭제</th>
           </tr>
         </thead>
         <tbody id="tableBody">
           <tr id="emptyRow">
-            <td colspan="9">
+            <td colspan="8">
               <div class="empty-state">
                 <div class="empty-icon">&#128194;</div>
                 <p>아직 데이터가 없습니다.<br>사진을 업로드하거나 행을 추가해 주세요.</p>
@@ -940,7 +1065,57 @@
       </table>
     </div>
   </div>
+</div>
 
+<!-- 상세 모달 -->
+<div class="modal-backdrop" id="detailModal">
+  <div class="detail-modal">
+    <div class="detail-modal-title">&#128203; 상세 정보</div>
+    <div class="detail-grid">
+      <div class="detail-field">
+        <label>성명</label>
+        <input type="text" id="d_성명" placeholder="성명" />
+      </div>
+      <div class="detail-field">
+        <label>소속부서</label>
+        <input type="text" id="d_소속부서" placeholder="소속부서" />
+      </div>
+      <div class="detail-field">
+        <label>날짜</label>
+        <input type="date" id="d_날짜" />
+      </div>
+      <div class="detail-field">
+        <label>출근시간</label>
+        <input type="time" id="d_출근시간" />
+      </div>
+      <div class="detail-field">
+        <label>퇴근시간</label>
+        <input type="time" id="d_퇴근시간" />
+      </div>
+      <div class="detail-field full">
+        <label>출장지 / 방문처</label>
+        <input type="text" id="d_출장지" placeholder="출장지/방문처" />
+      </div>
+      <div class="detail-field full">
+        <label>비고</label>
+        <input type="text" id="d_비고" placeholder="특이사항" />
+      </div>
+    </div>
+    <div class="detail-sig-row">
+      <label>서명확인</label>
+      <div class="sig-toggle">
+        <button class="btn-sig-ok" id="sigOkBtn" onclick="setDetailSig(true)">✅ 확인</button>
+        <button class="btn-sig-no active" id="sigNoBtn" onclick="setDetailSig(false)">❌ 미확인</button>
+      </div>
+    </div>
+    <div class="detail-modal-actions">
+      <button class="btn btn-danger" onclick="deleteFromDetail()">&#128465; 삭제</button>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-outline" onclick="closeDetailModal()">취소</button>
+        <button class="btn btn-primary" onclick="saveDetail()">&#128190; 저장</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- 로딩 오버레이 -->
@@ -1514,6 +1689,8 @@ function onFilterChange() {
 
 function resetFilter() {
   document.getElementById('filterName').value  = '';
+  document.getElementById('filterDept').value  = '';
+  document.getElementById('filterDest').value  = '';
   document.getElementById('filterMonth').value = '';
   document.getElementById('filterDate').value  = '';
   setMode('all');
@@ -1521,23 +1698,39 @@ function resetFilter() {
 
 function getFilteredRecords() {
   const name  = document.getElementById('filterName').value;
+  const dept  = document.getElementById('filterDept').value;
+  const dest  = document.getElementById('filterDest').value;
   const month = document.getElementById('filterMonth').value;
   const date  = document.getElementById('filterDate').value;
 
   return records.filter(r => {
-    if (name  && r.성명 !== name)               return false;
+    if (name && r.성명    !== name) return false;
+    if (dept && r.소속부서 !== dept) return false;
+    if (dest && r.출장지  !== dest) return false;
     if (filterMode === 'monthly' && month && !(r.날짜 || '').startsWith(month)) return false;
     if (filterMode === 'daily'   && date  && r.날짜 !== date)                   return false;
     return true;
   });
 }
 
-function updateNameDropdown() {
-  const sel   = document.getElementById('filterName');
-  const cur   = sel.value;
+function updateDropdowns() {
+  const selName = document.getElementById('filterName');
+  const selDept = document.getElementById('filterDept');
+  const selDest = document.getElementById('filterDest');
+  const curName = selName.value;
+  const curDept = selDept.value;
+  const curDest = selDest.value;
+
   const names = [...new Set(records.map(r => r.성명).filter(Boolean))].sort();
-  sel.innerHTML = '<option value="">전체</option>' +
-    names.map(n => `<option value="${esc(n)}" ${cur === n ? 'selected' : ''}>${esc(n)}</option>`).join('');
+  const depts = [...new Set(records.map(r => r.소속부서).filter(Boolean))].sort();
+  const dests = [...new Set(records.map(r => r.출장지).filter(Boolean))].sort();
+
+  selName.innerHTML = '<option value="">전체</option>' +
+    names.map(n => `<option value="${esc(n)}" ${curName === n ? 'selected' : ''}>${esc(n)}</option>`).join('');
+  selDept.innerHTML = '<option value="">전체</option>' +
+    depts.map(d => `<option value="${esc(d)}" ${curDept === d ? 'selected' : ''}>${esc(d)}</option>`).join('');
+  selDest.innerHTML = '<option value="">전체</option>' +
+    dests.map(d => `<option value="${esc(d)}" ${curDest === d ? 'selected' : ''}>${esc(d)}</option>`).join('');
 }
 
 /* ============================================================
@@ -1679,10 +1872,10 @@ function renderStats() {
 }
 
 /* ============================================================
-   테이블 렌더링
+   테이블 렌더링 (간소화 버전)
    ============================================================ */
 function renderTable() {
-  updateNameDropdown();
+  updateDropdowns();
   const filtered = getFilteredRecords();
   const tbody    = document.getElementById('tableBody');
   document.getElementById('recordCount').textContent = `${filtered.length}건`;
@@ -1690,7 +1883,7 @@ function renderTable() {
   if (filtered.length === 0) {
     tbody.innerHTML = `
       <tr id="emptyRow">
-        <td colspan="9">
+        <td colspan="8">
           <div class="empty-state">
             <div class="empty-icon">&#128194;</div>
             <p>아직 데이터가 없습니다.<br>사진을 업로드하거나 행을 추가해 주세요.</p>
@@ -1703,24 +1896,88 @@ function renderTable() {
   tbody.innerHTML = filtered.map((r) => {
     const i = records.indexOf(r);
     return `
-    <tr>
+    <tr class="clickable" onclick="openDetailModal(${i})">
       <td>${i + 1}</td>
-      <td><input type="text"  value="${esc(r.성명)}"    onchange="updateRecord(${i}, '성명', this.value)"    placeholder="성명" /></td>
-      <td><input type="text"  value="${esc(r.소속부서)}" onchange="updateRecord(${i}, '소속부서', this.value)" placeholder="부서명" /></td>
-      <td><input type="date"  value="${esc(r.날짜)}"    onchange="updateRecord(${i}, '날짜', this.value)" /></td>
-      <td><input type="time"  value="${esc(r.출근시간)}" onchange="updateRecord(${i}, '출근시간', this.value)" /></td>
-      <td><input type="time"  value="${esc(r.퇴근시간)}" onchange="updateRecord(${i}, '퇴근시간', this.value)" /></td>
-      <td><input type="text"  value="${esc(r.출장지)}"  onchange="updateRecord(${i}, '출장지', this.value)"  placeholder="출장지/방문처" /></td>
-      <td><input type="text"  value="${esc(r.비고)}"    onchange="updateRecord(${i}, '비고', this.value)"    placeholder="특이사항" /></td>
+      <td>${esc(r.성명)    || '-'}</td>
+      <td>${esc(r.소속부서) || '-'}</td>
+      <td>${esc(r.날짜)    || '-'}</td>
+      <td>${esc(r.출근시간) || '-'}</td>
+      <td>${esc(r.퇴근시간) || '-'}</td>
       <td>
-        <span class="sig-badge ${r.서명확인 ? 'sig-ok' : 'sig-no'}" onclick="toggleSig(${i})" title="클릭하여 변경">
+        <span class="sig-badge ${r.서명확인 ? 'sig-ok' : 'sig-no'}">
           ${r.서명확인 ? '✅ 확인' : '❌ 미확인'}
         </span>
       </td>
-      <td><button class="delete-row-btn" onclick="deleteRow(${i})" title="행 삭제">&#10005;</button></td>
+      <td><button class="delete-row-btn" onclick="event.stopPropagation(); deleteRow(${i})" title="행 삭제">&#10005;</button></td>
     </tr>`;
   }).join('');
 }
+
+/* ============================================================
+   상세 모달
+   ============================================================ */
+let detailIdx = null;
+
+function openDetailModal(idx) {
+  detailIdx = idx;
+  const r = records[idx];
+  document.getElementById('d_성명').value    = r.성명    || '';
+  document.getElementById('d_소속부서').value = r.소속부서 || '';
+  document.getElementById('d_날짜').value    = r.날짜    || '';
+  document.getElementById('d_출근시간').value = r.출근시간 || '';
+  document.getElementById('d_퇴근시간').value = r.퇴근시간 || '';
+  document.getElementById('d_출장지').value  = r.출장지  || '';
+  document.getElementById('d_비고').value    = r.비고    || '';
+  setDetailSig(r.서명확인 === true);
+  document.getElementById('detailModal').classList.add('active');
+}
+
+function closeDetailModal() {
+  document.getElementById('detailModal').classList.remove('active');
+  detailIdx = null;
+}
+
+function setDetailSig(val) {
+  document.getElementById('sigOkBtn').classList.toggle('active',  val);
+  document.getElementById('sigNoBtn').classList.toggle('active', !val);
+  document.getElementById('sigOkBtn').dataset.val = val ? 'true' : 'false';
+}
+
+function getDetailSig() {
+  return document.getElementById('sigOkBtn').dataset.val === 'true';
+}
+
+async function saveDetail() {
+  if (detailIdx === null) return;
+  const r = records[detailIdx];
+  r.성명    = document.getElementById('d_성명').value.trim();
+  r.소속부서 = document.getElementById('d_소속부서').value.trim();
+  r.날짜    = document.getElementById('d_날짜').value;
+  r.출근시간 = document.getElementById('d_출근시간').value;
+  r.퇴근시간 = document.getElementById('d_퇴근시간').value;
+  r.출장지  = document.getElementById('d_출장지').value.trim();
+  r.비고    = document.getElementById('d_비고').value.trim();
+  r.서명확인 = getDetailSig();
+  await saveRecordToFirestore(r);
+  closeDetailModal();
+  renderTable();
+  renderStats();
+  showToast('저장되었습니다.', 'success');
+}
+
+async function deleteFromDetail() {
+  if (detailIdx === null) return;
+  if (!confirm('이 행을 삭제하시겠습니까?')) return;
+  await deleteRecordFromFirestore(records[detailIdx].id);
+  records.splice(detailIdx, 1);
+  closeDetailModal();
+  renderTable();
+  showToast('삭제되었습니다.', 'info');
+}
+
+document.getElementById('detailModal').addEventListener('click', (e) => {
+  if (e.target === document.getElementById('detailModal')) closeDetailModal();
+});
 
 function esc(v) {
   if (v == null) return '';
@@ -1739,11 +1996,6 @@ async function updateRecord(idx, key, value) {
   await saveRecordToFirestore(records[idx]);
 }
 
-async function toggleSig(idx) {
-  records[idx].서명확인 = !records[idx].서명확인;
-  await saveRecordToFirestore(records[idx]);
-  renderTable();
-}
 
 async function deleteRow(idx) {
   const record = records[idx];
